@@ -6,7 +6,7 @@ import java.util.Map;
 
 public abstract class MapCacheMySqlDataCollection<T> extends MysqlDataCollection<T> {
 
-    private Map<T, Object> cache = new HashMap<>();
+    private Map<T, Map<String, Object>> container = new HashMap<>();
 
     public MapCacheMySqlDataCollection(String tableName, MySqlFieldBuilder fieldBuilder, DataSource dataSource) {
         super(tableName, fieldBuilder, dataSource);
@@ -14,11 +14,13 @@ public abstract class MapCacheMySqlDataCollection<T> extends MysqlDataCollection
 
     @Override
     public <F> F getField(T identifier, String fieldName) {
-        if (cache.containsKey(identifier)) {
-            return (F) cache.get(identifier);
+        if (container.containsKey(identifier) && container.get(identifier).containsKey(fieldName.toLowerCase())) {
+            return (F) container.get(identifier).get(fieldName.toLowerCase());
+        } else {
+            container.put(identifier, new HashMap<>());
         }
         F result = super.getField(identifier, fieldName);
-        cache.put(identifier, result);
+        container.get(identifier).put(fieldName.toLowerCase(), result);
         return result;
     }
 
@@ -26,17 +28,21 @@ public abstract class MapCacheMySqlDataCollection<T> extends MysqlDataCollection
     public <F> boolean setField(T identifier, String fieldName, F value) {
         boolean result = super.setField(identifier, fieldName, value);
         if (result) {
-            cache.put(identifier, value);
+            if (!container.containsKey(identifier)) {
+                container.put(identifier, new HashMap<>());
+            }
+            container.get(identifier).put(fieldName.toLowerCase(), value);
         }
         return result;
     }
 
     @Override
     public boolean containsField(T identifier, String fieldName) {
-        return cache.containsKey(identifier) || super.containsField(identifier, fieldName);
+        return (container.containsKey(identifier) && container.get(identifier).containsKey(fieldName.toLowerCase()))
+                || super.containsField(identifier, fieldName);
     }
 
     public void removeFromCache(T identifier) {
-        this.cache.remove(identifier);
+        this.container.remove(identifier);
     }
 }
