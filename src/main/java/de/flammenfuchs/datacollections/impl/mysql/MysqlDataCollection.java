@@ -32,18 +32,18 @@ public abstract class MysqlDataCollection<T> implements DataCollection<T> {
     private void initialize() throws DataCollectionException {
         StringJoiner query = new StringJoiner(", ",
                 "CREATE TABLE IF NOT EXISTS " + tableName + "(", ")");
-        for (MySqlFieldBuilder.FieldEntry fieldEntry : fieldBuilder.getFieldEntries()) {
+        for (FieldEntry fieldEntry : fieldBuilder.getFieldEntries()) {
             String currentField = fieldEntry.getFieldName() + " " + fieldEntry.getFieldType();
             //process properties
-            for (MySqlFieldBuilder.FieldProperty property : fieldEntry.getFieldProperties()) {
-                if (property == MySqlFieldBuilder.FieldProperty.PRIMARY_KEY) {
+            for (FieldProperty property : fieldEntry.getFieldProperties()) {
+                if (property == FieldProperty.PRIMARY_KEY) {
                     if (identifierColumnName != null) {
                         throw new DataCollectionException("Multiple primary key fields are not supported!");
                     } else {
                         identifierColumnName = fieldEntry.getFieldName();
                     }
                 }
-                if (property == MySqlFieldBuilder.FieldProperty.AUTO_INCREMENT) {
+                if (property == FieldProperty.AUTO_INCREMENT) {
                     currentField += " AUTO_INCREMENT";
                 } else if (fieldEntry.getDefaultValue() != null) {
                     if (!(fieldEntry.getDefaultValue() instanceof Number)) {
