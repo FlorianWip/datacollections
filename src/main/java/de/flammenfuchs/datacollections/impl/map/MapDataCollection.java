@@ -1,5 +1,6 @@
 package de.flammenfuchs.datacollections.impl.map;
 
+import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.reflect.TypeToken;
 import de.flammenfuchs.datacollections.DataCollection;
@@ -18,11 +19,30 @@ public class MapDataCollection<T> implements DataCollection<T> {
 
     private final File jsonFile;
     private Map<T, Map<String, Object>> container;
+    private Gson gson;
 
-    @SneakyThrows
     public MapDataCollection(Class<T> paramClass, String directoryPath, String fileName) {
         File directory = new File(directoryPath);
         jsonFile = new File(directoryPath, fileName);
+        init(paramClass, directory, null);
+    }
+
+    public MapDataCollection(Class<T> paramClass, String directoryPath, String fileName, Gson gson) {
+        File directory = new File(directoryPath);
+        jsonFile = new File(directoryPath, fileName);
+        init(paramClass, directory, gson);
+    }
+
+    @SneakyThrows
+    private void init(Class<T> paramClass, File directory, Gson gson) {
+        if (gson == null) {
+            this.gson = new GsonBuilder()
+                    .setPrettyPrinting()
+                    .disableHtmlEscaping()
+                    .create();
+        } else {
+            this.gson = gson;
+        }
         directory.mkdirs();
         if (jsonFile.isDirectory()) {
             throw new IllegalArgumentException("Given target file is a directory");
@@ -34,11 +54,7 @@ public class MapDataCollection<T> implements DataCollection<T> {
                     paramClass,
                     TypeToken.getParameterized(HashMap.class, String.class, Object.class).getType()
             ).getType();
-            container = new GsonBuilder()
-                    .setPrettyPrinting()
-                    .disableHtmlEscaping()
-                    .create()
-                    .fromJson(reader, type);
+            container = gson.fromJson(reader, type);
             if (container == null) {
                 container = new HashMap<>();
             }
@@ -105,11 +121,7 @@ public class MapDataCollection<T> implements DataCollection<T> {
     @SneakyThrows
     public void save() {
         FileWriter writer = new FileWriter(jsonFile);
-        new GsonBuilder()
-                .setPrettyPrinting()
-                .disableHtmlEscaping()
-                .create()
-                .toJson(container, writer);
+        gson.toJson(container, writer);
         writer.flush();
         writer.close();
     }
